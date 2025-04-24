@@ -1,0 +1,111 @@
+
+# Student Course Management System - AWS EC2 + RDS + MySQL CLI
+
+
+## Step 1: Launch EC2 Instance
+
+1. Go to AWS Console > EC2 > Launch Instance
+2. Choose Amazon Linux 2 AMI
+3. Choose t2.micro (Free Tier eligible)
+4. Configure network (VPC + Subnet), enable Auto-assign Public IP
+5. Create or select a key pair (for SSH access)
+6. Allow SSH (port 22) and MySQL (port 3306) in Security Group
+7. Launch instance
+
+---
+
+## Step 2: Launch RDS MySQL Instance
+
+1. Go to AWS Console > RDS > Create Database
+2. Choose Standard Create > MySQL
+3. Engine version: default
+4. DB Instance Class: db.t3.micro (Free Tier)
+5. Set DB name, master username, and password
+6. Enable public access if required
+7. Choose the same VPC as EC2
+8. In Security Group, allow inbound MySQL/Aurora (port 3306) from EC2
+
+---
+
+## Step 3: Connect EC2 to RDS
+
+1. SSH into your EC2:
+```bash
+ssh -i your-key.pem ec2-user@<EC2-Public-IP>
+```
+
+2. Install MySQL client if not already:
+```bash
+sudo dnf update -y
+sudo dnf install mariadb105
+sudo dnf install mariadb105-server
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+sudo mysql -u root -p
+
+```
+
+3. Connect to RDS from EC2:
+```bash
+mysql -h <RDS-ENDPOINT> -u <master-username> -p
+```
+
+---
+
+## Step 4: SQL Code for Student Course Management
+
+```sql
+-- Create the database
+CREATE DATABASE student_course_db;
+USE student_course_db;
+
+-- Create students table
+CREATE TABLE students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    age INT
+);
+
+-- Create courses table
+CREATE TABLE courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    instructor VARCHAR(100)
+);
+
+-- Create enrollments table
+CREATE TABLE enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    course_id INT,
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (course_id) REFERENCES courses(id)
+);
+
+-- Insert sample students
+INSERT INTO students (name, email, age)
+VALUES ('John Doe', 'john@example.com', 20),
+       ('Alice Smith', 'alice@example.com', 22);
+
+-- Insert sample courses
+INSERT INTO courses (name, instructor)
+VALUES ('Data Structures', 'Prof. Sharma'),
+       ('Databases', 'Dr. Rao');
+
+-- Insert sample enrollments
+INSERT INTO enrollments (student_id, course_id)
+VALUES (1, 1), (1, 2), (2, 2);
+
+-- View all students
+SELECT * FROM students;
+
+-- View all courses
+SELECT * FROM courses;
+
+-- View enrollments with student and course names
+SELECT s.name AS student, c.name AS course
+FROM enrollments e
+JOIN students s ON e.student_id = s.id
+JOIN courses c ON e.course_id = c.id;
+```
